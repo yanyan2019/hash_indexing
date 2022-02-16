@@ -38,6 +38,8 @@ private:
     int i;
     int numRecords; // Records in index
     int nextFreePage; // Next page to write to
+    string fName;
+    int block_size;
 
     // Insert new record into index
     void insertRecord(Record record) {
@@ -67,11 +69,34 @@ public:
 
     // Read csv file and add records to the index
     void createFromFile(string csvFName) {
-        
+        // variables
+        int j = 0;
+        string line, token;
+        vector<std::string> fields;
+
+        // open csv file
+        ifstream infile;
+        infile.open(csvFName);
+
+        // split data
+        while(getline(infile, line)){
+            stringstream line_str(line);
+            for(int i = 0; i < 4; i++){
+                getline(line_str, token, ',');
+                fields.insert(fields.begin()+i, token);
+                if(i == 3){
+                    // create record
+                    Record record(fields);
+                    record.print();
+                }
+            }
+        }
+
+        // add to index file
     }
 
     // Given an ID, find the relevant record and print it
     Record findRecordById(int id) {
-        
+
     }
 };
