@@ -35,26 +35,53 @@ private:
     vector<int> pageDirectory;  // Where pageDirectory[h(id)] gives page index of block
                                 // can scan to pages using index*PAGE_SIZE as offset (using seek function)
     int numBlocks; // n
-    int i;
+    int i;          // bits to select
     int numRecords; // Records in index
     int nextFreePage; // Next page to write to
-    string fName;
-    int block_size;
+
+    string fName; // index file name
+    int block_size; // total occupied bytes
 
     // Insert new record into index
     void insertRecord(Record record) {
+        ofstream index_file;
+        index_file.open(fName, ofstream::app);
 
         // No records written to index yet
         if (numRecords == 0) {
             // Initialize index with first blocks (start with 2)
-
+            pageDirectory.resize(2);
+            numBlocks = 2;
+            i++;
         }
 
         // Add record to the index in the correct block, creating overflow block if necessary
+        // hash id and convert to binary
+        long unsigned int h_value = record.id%(2^16);
+        bitset<8> all_bits(h_value);
+        bitset<8> b_key;
+// i=8;
+        // insert and convert i bits key to find bucket
+        for(int j = 0; j < i; j++){
+            b_key.set(j, all_bits[j]);
+        }
+//        cout << " all key bits: "<< all_bits.to_string() << " " << i << " bits key: "<< b_key.to_string() << endl;
+        long unsigned int i_key = b_key.to_ulong();
+        cout <<  "index key: "<< i_key << endl;
+
+
+        // insert record to bucket
+        index_file.seekp(i_key * PAGE_SIZE);
+        //cout << pageDirectory[i_key] * PAGE_SIZE << endl;
+        index_file << record.id << "," << record.name << "," << record.bio << "," << record.manager_id << "&";
+        pageDirectory[i_key] =  index_file.tellp();
+        //cout << "after pos: " << pageDirectory[i_key] << endl;
 
 
         // Take neccessary steps if capacity is reached
 
+
+        numRecords++;
 
     }
 
@@ -70,12 +97,13 @@ public:
     // Read csv file and add records to the index
     void createFromFile(string csvFName) {
         // variables
-        int j = 0;
         string line, token;
         vector<std::string> fields;
 
-        // open csv file
+        // open files
         ifstream infile;
+        //ofstream index_file;
+        //index_file.open(fName);
         infile.open(csvFName);
 
         // split data
@@ -87,12 +115,12 @@ public:
                 if(i == 3){
                     // create record
                     Record record(fields);
-                    record.print();
+
+                    // add to index file
+                    insertRecord(record);
                 }
             }
         }
-
-        // add to index file
     }
 
     // Given an ID, find the relevant record and print it
